@@ -1,0 +1,51 @@
+{
+  "name": "@envoy/toolshed/actions/retest",
+  "version": "1.0.0",
+  "description": "A GitHub action to re-run failed GitHub Workflow runs on PRs by commenting '/retest'.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/envoyproxy/toolshed.git"
+  },
+  "keywords": [
+    "action",
+    "ci",
+    "github",
+    "retest",
+    "workflow"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/envoyproxy/toolshed/issues"
+  },
+  "homepage": "https://github.com/envoyproxy/toolshed",
+  "scripts": {
+    "build": "tsc --noEmit && ncc build retest.ts -o dist -m",
+    "test": "tsc --noEmit && jest",
+    "lint": "eslint . --ext .ts",
+    "lint-fix": "eslint . --ext .ts --fix"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.11.28",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vercel/ncc": "^0.38.1",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "jest": "^29.0.0",
+    "nock": "^13.5.4",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "@actions/core": "^1.9.1",
+    "@actions/github": "^6.0.0",
+    "@octokit/rest": "^20.0.1",
+    "axios": "^1.6.8",
+    "fetch-mock": "^9.11.0",
+    "node-fetch": "^2.7.0"
+  }
+}
