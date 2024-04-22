@@ -1,6 +1,6 @@
 name: "Retest"
 description: 'Re-run failed GitHub Workflow runs on PRs by commenting "/retest".'
-author: "yuluo"
+author: "JP Simard/phlax"
 inputs:
   token:
     description: >
