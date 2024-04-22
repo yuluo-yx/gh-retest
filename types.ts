@@ -11,7 +11,6 @@ type GithubReactionType =
   | "heart"
   | "hooray"
   | "eyes";
-  
 type CheckRunsType =
   Endpoints["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"]["response"];
 type CreateReactionType =
