@@ -9,5 +9,5 @@ jobs:
     - uses: actions/labeler@main
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        configuration-path: .github/labels.yaml
+        configuration-path: .github/labels.yml
         
