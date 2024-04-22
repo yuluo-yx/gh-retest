@@ -1,10 +1,10 @@
 {
-  "name": "@envoy/toolshed/actions/retest",
+  "name": "@yuluo/gh-retest",
   "version": "1.0.0",
   "description": "A GitHub action to re-run failed GitHub Workflow runs on PRs by commenting '/retest'.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/envoyproxy/toolshed.git"
+    "url": "git+https://github.com/yuluo-yx/gh-retest.git"
   },
   "keywords": [
     "action",
@@ -13,12 +13,12 @@
     "retest",
     "workflow"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "yuluo",
+  "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/envoyproxy/toolshed/issues"
+    "url": "https://github.com/yuluo-yx/gh-retest/issues"
   },
-  "homepage": "https://github.com/envoyproxy/toolshed",
+  "homepage": "https://github.com/yuluo-yx/gh-retest.git",
   "scripts": {
     "build": "tsc --noEmit && ncc build retest.ts -o dist -m",
     "test": "tsc --noEmit && jest",

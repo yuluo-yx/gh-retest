@@ -16,7 +16,7 @@ jobs:
     name: Retest
     runs-on: ubuntu-latest
     steps:
-      - uses: envoproxy/toolshed/gh-actions/retest@VERSION
+      - uses: yuluo-yx/gh-retest.git@2024.04.22
 ```
 
 ## Development
@@ -29,10 +29,10 @@ npm test
 
 And lint:
 
-```
+```bash
 npm run lint
 ```
 
-# License
+## License
 
-Apache 2.
+Apache 2.0

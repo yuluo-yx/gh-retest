@@ -1,14 +1,11 @@
+
+
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Buffer} from 'buffer'
-import {RestEndpointMethodTypes} from '@octokit/rest'
-import {Endpoints, OctokitResponse} from '@octokit/types'
 import axios from 'axios'
-import {GitHub} from '@actions/github/lib/utils'
-
-type GithubReactionType = 'rocket' | '+1' | '-1' | 'laugh' | 'confused' | 'heart' | 'hooray' | 'eyes'
-type CheckRunsType = Endpoints['GET /repos/{owner}/{repo}/commits/{ref}/check-runs']['response']
-type CreateReactionType = RestEndpointMethodTypes['reactions']['createForIssueComment']
+import { OctokitResponse } from "@octokit/types";
+import { GithubReactionType, CheckRunsType, CreateReactionType, Retest, RetestResult, PR, Env } from './types'
 
 function cachedProperty(_: unknown, key: string, descriptor: PropertyDescriptor): PropertyDescriptor {
   const originalGetter = descriptor.get
@@ -16,55 +13,23 @@ function cachedProperty(_: unknown, key: string, descriptor: PropertyDescriptor)
     throw new Error('The decorated property must have a getter.')
   }
 
-  // Use a Symbol for storing the cached value on the instance
+
   const cachedValueKey = Symbol(`__cached_${key}`)
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
+
   descriptor.get = function (this: any): any {
+
     if (!this[cachedValueKey]) {
       this[cachedValueKey] = originalGetter.call(this)
     }
+
     return this[cachedValueKey]
   }
+
   return descriptor
 }
 
-type Retest = {
-  name: string
-  octokit: boolean
-  url: string
-  method?: string
-  config?: any
-}
-
-type RetestResult = {
-  retested: number
-  errors: number
-}
-
-type PR = {
-  number: number
-  branch: string
-  commit: string
-}
-
-type OctokitType = InstanceType<typeof GitHub>
-
-type Env = {
-  octokit: OctokitType
-  token: string
-  comment: number
-  debug: boolean
-  pr: string
-  nwo: string
-  owner: string
-  repo: string
-  appOwnerSlug: string
-  azpOrg: string | undefined
-  azpOwnerSlug: string
-  azpToken: string | undefined
-}
-
 class RetestCommand {
+
   public checks: CheckRunsType['data']['check_runs']
   public env: Env
   public name = ''
@@ -107,6 +72,7 @@ class RetestCommand {
   }
 
   retestOctokit = async (pr: PR, check: Retest): Promise<number> => {
+
     const method = check.method || 'POST'
     const rerunURL = `${method} ${check.url}`
     if (rerunURL.endsWith('rerun-failed-jobs')) {
@@ -133,6 +99,7 @@ class RetestCommand {
   }
 
   retestRuns = async (retestables: Array<Retest>): Promise<RetestResult> => {
+
     let errors = 0
     for (const check of retestables) {
       if (!check.octokit) {
@@ -150,6 +117,7 @@ class RetestCommand {
 }
 
 class GithubRetestCommand extends RetestCommand {
+
   name = 'Github'
 
   constructor(env: Env, pr: PR, checks: CheckRunsType['data']['check_runs']) {
@@ -170,6 +138,7 @@ class GithubRetestCommand extends RetestCommand {
           `Check ${check.conclusion}: ${check.name}\n\n  ${check.html_url}\n\n`
           + `  https://github.com/${this.env.owner}/${this.env.repo}/actions/runs/${check.external_id}\n`)
       }
+      // run failed jobs.
       failedChecks.push({
         name: check.name || 'unknown',
         url: `/repos/${this.env.owner}/${this.env.repo}/actions/runs/${check.external_id}/rerun-failed-jobs`,
@@ -188,12 +157,14 @@ class GithubRetestCommand extends RetestCommand {
           delete check.output[key]
         }
       })
+
       check.output.title = check.output.title.replace('failure', 'restarted')
       const lines = check.output.text.split('\n')
       const line0 = lines[0].replace('Check run finished (failure :x:)', 'Check run restarted')
       check.output.text = `${line0}\n${lines.slice(1).join('\n')}`
       check.output.summary = 'Check is running again'
       check.status = 'in_progress'
+
       failedChecks.push({
         name: check.name || 'unknown',
         url: `/repos/${this.env.owner}/${this.env.repo}/check-runs`,
@@ -205,82 +176,8 @@ class GithubRetestCommand extends RetestCommand {
   }
 }
 
-class AZPRetestCommand extends RetestCommand {
-  name = 'AZP'
-
-  constructor(env: Env, pr: PR, checks: CheckRunsType['data']['check_runs']) {
-    super(env, pr, checks)
-  }
-
-  getRetestables = async (): Promise<Array<Retest>> => {
-    // add err handling
-    const retestables: Array<Retest> = []
-    const checks: Array<any> = []
-    const checkIds: Set<string> = new Set()
-    for (const check of this.checks) {
-      if (!check.external_id) {
-        continue
-      }
-      checkIds.add(check.external_id)
-      if (check.name.endsWith(')')) {
-        checks.push(check)
-      }
-    }
-    for (const checkId of checkIds) {
-      const subchecks = checks.filter((c: any) => {
-        return c.external_id === checkId
-      })
-      if (Object.keys(subchecks).length === 0) {
-        continue
-      }
-      const subcheck = subchecks[0].name.split(' ')[0]
-      const link = this.getAZPLink(checkId)
-      const name = `[${subcheck}](${link})`
-      const config = {
-        headers: {
-          authorization: `basic ${this.env.azpToken}`,
-          'content-type': 'application/json;odata=verbose',
-        },
-      }
-      const seen = new Set()
-      for (const check of subchecks) {
-        if (check.conclusion && check.conclusion !== 'success') {
-          if (seen.has(checkId)) {
-            continue
-          }
-          seen.add(checkId)
-          const [_, buildId, project] = checkId.split('|')
-          // TODO(phlax): figure out why this is necessary
-          if (!buildId || !project) {
-            continue
-          }
-          console.log(`retrying ${checkId}`)
-          const url = `https://dev.azure.com/${this.env.azpOrg}/${project}/_apis/build/builds/${buildId}?retry=true&api-version=6.0`
-          if (this.env.debug) {
-            console.log(
-              `Check ${check.conclusion}: ${check.name}\n\n  ${check.html_url}\n\n`
-                + `  https://dev.azure.com/cncf/envoy/_build/results?buildId=${buildId}&view=results\n`)
-          }
-          retestables.push({
-            url,
-            name,
-            config,
-            method: 'patch',
-            octokit: false,
-          })
-        }
-      }
-    }
-    return retestables
-  }
-
-  getAZPLink = (checkId: string): string => {
-    const [_, buildId, project] = checkId.split('|')
-    return `https://dev.azure.com/${this.env.azpOrg}/${project}/_build/results?buildId=${buildId}&view=results`
-  }
-}
-
 class RetestCommands {
+
   @cachedProperty
   get env(): Env {
     let azpOrg, azpToken
@@ -303,6 +200,7 @@ class RetestCommands {
     const azpOwnerSlug = core.getInput('azp-owner')
     const appOwnerSlug = core.getInput('app-owner')
     const debug = Boolean(process.env.CI_DEBUG && process.env.CI_DEBUG != 'false')
+
     return {
       debug,
       token,
@@ -366,9 +264,6 @@ class RetestCommands {
     }
     const checks = await this.checks(pr)
     const retesters: Array<RetestCommand> = [new GithubRetestCommand(this.env, pr, checks)]
-    if (this.env.azpOrg) {
-      retesters.push(new AZPRetestCommand(this.env, pr, checks))
-    }
     return retesters
   }
 
@@ -418,6 +313,7 @@ const run = async (): Promise<void> => {
 
 // Don't auto-execute in the test environment
 if (process.env['NODE_ENV'] !== 'test') {
+
   run()
 }
 
