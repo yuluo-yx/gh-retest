@@ -46,10 +46,6 @@ type Env = {
   nwo: string;
   owner: string;
   repo: string;
-  appOwnerSlug: string;
-  azpOrg: string | undefined;
-  azpOwnerSlug: string;
-  azpToken: string | undefined;
 };
 
 export {

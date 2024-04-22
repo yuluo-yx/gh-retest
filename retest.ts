@@ -2,7 +2,6 @@
 
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {Buffer} from 'buffer'
 import axios from 'axios'
 import { OctokitResponse } from "@octokit/types";
 import { GithubReactionType, CheckRunsType, CreateReactionType, Retest, RetestResult, PR, Env } from './types'
@@ -127,7 +126,7 @@ class GithubRetestCommand extends RetestCommand {
   getRetestables = async (): Promise<Array<Retest>> => {
     const failedChecks: any[] = []
     const checks = this.checks.filter((checkRun) => {
-      return (checkRun.app?.slug == this.env.appOwnerSlug)
+      return checkRun.app?.slug
     })
     checks.forEach(async (check: any) => {
       if (check.conclusion !== 'failure' && check.conclusion !== 'cancelled') {
@@ -180,7 +179,6 @@ class RetestCommands {
 
   @cachedProperty
   get env(): Env {
-    let azpOrg, azpToken
     const token = core.getInput('token') || process.env['GITHUB_TOKEN']
     if (!token || token === '') throw new TypeError('`token` must be set')
 
@@ -191,14 +189,6 @@ class RetestCommands {
     // Create the octokit client
     const nwo = process.env['GITHUB_REPOSITORY'] || '/'
     const [owner, repo] = nwo.split('/')
-    if (core.getInput('azp_org') && core.getInput('azp_token')) {
-      azpOrg = core.getInput('azp_org')
-      azpToken = Buffer.from(`:${core.getInput('azp_token')}`, 'binary').toString('base64')
-    } else {
-      core.warning('No creds for AZP')
-    }
-    const azpOwnerSlug = core.getInput('azp-owner')
-    const appOwnerSlug = core.getInput('app-owner')
     const debug = Boolean(process.env.CI_DEBUG && process.env.CI_DEBUG != 'false')
 
     return {
@@ -210,10 +200,6 @@ class RetestCommands {
       repo,
       comment,
       pr,
-      appOwnerSlug,
-      azpOrg,
-      azpOwnerSlug,
-      azpToken,
     }
   }
 
