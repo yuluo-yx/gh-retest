@@ -17,9 +17,9 @@ var (
 
 func InitRetestCommands() *Runtime {
 
-	commentInput, _ := core.GetInput("comment-id")
+	commentInput, _ := core.GetInput("comment_id")
 	comment, _ := strconv.Atoi(commentInput)
-	pr, _ := core.GetInput("pr-url")
+	pr, _ := core.GetInput("pr_url")
 	nwo := os.Getenv("GITHUB_REPOSITORY")
 	debug := os.Getenv("CI_DEBUG") != "" && os.Getenv("CI_DEBUG") != "false"
 	var repo, owner string
@@ -35,6 +35,7 @@ func InitRetestCommands() *Runtime {
 		Pr:      pr,
 		Comment: comment,
 		Repo:    repo,
+		Nwo:     nwo,
 		Owner:   owner,
 		Debug:   debug,
 	}
