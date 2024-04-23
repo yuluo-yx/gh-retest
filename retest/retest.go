@@ -83,6 +83,9 @@ func getComment(rt *Runtime) bool {
 func retest() {
 
 	commands := InitRetestCommands()
+
+	fmt.Printf("%v\n", commands)
+
 	pr := getPR(commands)
 
 	fmt.Println(pr)
