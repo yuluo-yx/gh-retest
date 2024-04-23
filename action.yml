@@ -26,3 +26,8 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args:
+    - ${{ inputs.token }}
+    - ${{ inputs.comment-id }}
+    - ${{ inputs.pr-url }}
+    - ${{ inputs.args }}
