@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/actions-go/toolkit/core"
 	"github.com/actions-go/toolkit/github"
 )
 
@@ -17,9 +16,9 @@ var (
 
 func InitRetestCommands() *Runtime {
 
-	commentInput, _ := core.GetInput("COMMENT-ID")
+	commentInput := os.Getenv("INPUT_COMMENT-ID")
 	comment, _ := strconv.Atoi(commentInput)
-	pr, _ := core.GetInput("PR-URL")
+	pr := os.Getenv("INPUT_PR-URL")
 	nwo := os.Getenv("GITHUB_REPOSITORY")
 	debug := os.Getenv("CI_DEBUG") != "" && os.Getenv("CI_DEBUG") != "false"
 	var repo, owner string
