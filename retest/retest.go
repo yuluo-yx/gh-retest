@@ -44,7 +44,7 @@ func InitRetestCommands() *Runtime {
 func getPR(rt *Runtime) *PullRequest {
 
 	if rt.Pr == "" {
-		log.Fatal("tnv.pr url is nil")
+		log.Fatal("env.pr url is nil")
 	}
 
 	fmt.Println(rt.Pr)

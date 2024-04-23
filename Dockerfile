@@ -17,6 +17,7 @@ FROM docker.io/library/ubuntu:23.10
 COPY --from=builder /workspace/gh-retest /usr/local/bin/gh-retest
 COPY --from=builder /workspace/LICENSE /LICENSE
 COPY --from=builder /workspace/README.md /README.md
+COPY --from=builder /workspace/action.yml /action.yml
 
 LABEL "com.github.actions.name"="gh-retest"
 LABEL "com.github.actions.description"="gh-retest"
