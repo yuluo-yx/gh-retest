@@ -10,7 +10,7 @@ COPY README.md README.md
 COPY LICENSE LICENSE
 COPY action.yml action.yml
 
-RUN CGO_ENABLED=0 go build -v -a -ldflags -o gh-retest .
+RUN CGO_ENABLED=0 go build -o gh-retest .
 
 FROM docker.io/library/ubuntu:23.10
 
