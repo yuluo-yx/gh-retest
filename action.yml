@@ -1,6 +1,6 @@
 name: "Retest"
 description: 'Re-run failed GitHub Workflow runs on PRs by commenting "/retest".'
-author: "JP Simard/phlax"
+author: "yuluo"
 inputs:
   token:
     description: >
@@ -24,5 +24,5 @@ inputs:
       Args passed to command (not currently used)
 
 runs:
-  using: docker
-  main: Dockerfile
+  using: 'docker'
+  main: 'Dockerfile'
