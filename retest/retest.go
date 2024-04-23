@@ -40,10 +40,41 @@ func InitRetestCommands() *Runtime {
 	}
 }
 
-func getComment() bool {
+func getPR(rt *Runtime) *PullRequest {
 
-	comments := github.Context.Payload.PullRequest.Comments
-	fmt.Println(comments)
+	if rt.Pr == "" {
+		log.Fatal("tnv.pr url is nil")
+	}
+
+	fmt.Println(rt.Pr)
+
+	prResp, err := githubClient.Client().Get(rt.Pr)
+	if prResp == nil && err != nil {
+		log.Fatal(err.Error())
+	}
+
+	if rt.Debug {
+		log.Println("pr retest number: ", prResp.Body)
+	}
+
+	return &PullRequest{
+		Branch: "",
+		Number: 12,
+		Commit: "",
+	}
+
+}
+
+func getComment(rt *Runtime) bool {
+
+	//githubClient.Issues.ListComments(
+	//	context.Background(),
+	//	rt.Owner,
+	//	rt.Repo,
+	//	rt.Pr,
+	//	nil,
+	//)
+	//fmt.Println(comments)
 
 	return false
 
@@ -51,7 +82,12 @@ func getComment() bool {
 
 func retest() {
 
-	if rerun := getComment(); rerun {
+	commands := InitRetestCommands()
+	pr := getPR(commands)
+
+	fmt.Println(pr)
+
+	if rerun := getComment(commands); rerun {
 		fmt.Println(rerun)
 	} else {
 		fmt.Println("no rerun")
