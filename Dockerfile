@@ -14,6 +14,10 @@ RUN CGO_ENABLED=0 go build -v -a -ldflags -o gh-retest .
 
 FROM docker.io/library/ubuntu:23.10
 
+COPY --from=builder /workspace/gh-retest /usr/local/bin/gh-retest
+COPY --from=builder /workspace/LICENSE /LICENSE
+COPY --from=builder /workspace/README.md /README.md
+
 LABEL "com.github.actions.name"="gh-retest"
 LABEL "com.github.actions.description"="gh-retest"
 LABEL "com.github.actions.icon"="home"
