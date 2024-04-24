@@ -162,12 +162,17 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 			checkRunsFiledReload(check, "url")
 			checkRunsFiledReload(check.Output, "annotation")
 
+			fmt.Printf("title: %s\n", *check.Output.Title)
+			fmt.Printf("text: %s\n", *check.Output.Text)
+			fmt.Printf("summary: %s\n", *check.Output.Summary)
+
 			*check.Output.Title = strings.Replace(*check.Output.Title, "failed", "restarted", 1)
 			lines := strings.Split(*check.Output.Text, "\n")
 			line0 := strings.Replace(lines[0], "Check run finished (failure :x:)", "Check run restarted", 1)
 			*check.Output.Text = fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))
 			*check.Output.Summary = "Check is running again"
 			*check.Status = "in_progress"
+
 			failedChecks = append(failedChecks, &GHRetest{
 				Name:   *check.Name,
 				Url:    fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
