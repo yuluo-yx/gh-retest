@@ -54,6 +54,7 @@ func getPRNumber(pr string) int {
 func getPR(rt *Runtime) *PullRequest {
 
 	if rt.Pr == "" {
+
 		log.Fatal("env.pr url is nil")
 	}
 
@@ -64,9 +65,12 @@ func getPR(rt *Runtime) *PullRequest {
 		getPRNumber(rt.Pr),
 	)
 
+	fmt.Printf("%v\n", pr)
+	fmt.Printf("%v\n", prResp.StatusCode)
+
 	if pr == nil && prResp.StatusCode != 200 && err != nil {
 
-		log.Fatal("pr not found")
+		log.Fatal("pr not found, err: ", err)
 	}
 
 	if rt.Debug {
