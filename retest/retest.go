@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/actions-go/toolkit/core"
 	"github.com/actions-go/toolkit/github"
+	github2 "github.com/google/go-github/v42/github"
 )
 
 var (
@@ -83,14 +85,14 @@ func getPR(rt *Runtime) *PullRequest {
 
 }
 
-func addReaction(rt *Runtime) bool {
+func addReaction(rt *Runtime, content string) bool {
 
 	_, response, err := githubClient.Reactions.CreateCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
 		int64(rt.Comment),
-		"rocket",
+		content,
 	)
 
 	if response.StatusCode != 200 && err != nil {
@@ -103,7 +105,7 @@ func addReaction(rt *Runtime) bool {
 
 }
 
-func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest) {
+func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest) {
 
 	ref, response, err := githubClient.Checks.ListCheckRunsForRef(
 		context.Background(),
@@ -118,38 +120,199 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 		log.Fatal("failed to get check runs")
 	}
 
-	var checkIds []*string
 	for _, check := range ref.CheckRuns {
-
-		fmt.Printf("check success - 2: %v %v %v %v\n", *check.Name, *check.Conclusion, *check.CheckSuite, *check.ExternalID)
 
 		if check.ExternalID == nil {
 
 			continue
 		}
 
-		checkIds = append(checkIds, check.ExternalID)
+		if rt.Debug {
+
+			log.Printf("rerun failed checks %v %v %v\n", *check.Name, *check.Conclusion, *check.ExternalID)
+		}
+
+		if *check.Conclusion == "failure" ||
+			*check.Conclusion == "timed_out" ||
+			*check.Conclusion == "cancelled" {
+
+			if check.Name == nil {
+
+				*check.Name = "unknown"
+			}
+
+			failedChecks = append(failedChecks, &GHRetest{
+				Name: *check.Name,
+				Url:  fmt.Sprintf("/repos/%s/%s/actions/runs/%s/rerun-failed-jobs", rt.Owner, rt.Repo, *check.ExternalID),
+			})
+
+			// Create a new check from old failed check.
+			toDelete := []string{
+				"PullRequests",
+				"App",
+				"CheckSuite",
+				"Conclusion",
+				"NodeId",
+				"StartedAt",
+				"CompletedAt",
+				"Id",
+			}
+
+			checkRunsFiledReload(check, toDelete...)
+			checkRunsFiledReload(check, "url")
+			checkRunsFiledReload(check.Output, "annotation")
+
+			*check.Output.Title = strings.Replace(*check.Output.Title, "failed", "restarted", 1)
+			lines := strings.Split(*check.Output.Text, "\n")
+			line0 := strings.Replace(lines[0], "Check run finished (failure :x:)", "Check run restarted", 1)
+			*check.Output.Text = fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))
+			*check.Output.Summary = "Check is running again"
+			*check.Status = "in_progress"
+			failedChecks = append(failedChecks, &GHRetest{
+				Name:   *check.Name,
+				Url:    fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
+				Config: check,
+			})
+		}
+
 	}
 
-	retestTasks = append(retestTasks, &GHRetest{})
+	return failedChecks
+}
 
-	return nil
+func checkRunsFiledReload(obj interface{}, toDelete ...string) {
+
+	t := reflect.TypeOf(obj)
+	fieldNames := make([]string, 0)
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldNames = append(fieldNames, field.Name)
+	}
+
+	for _, fn := range fieldNames {
+		for _, str := range toDelete {
+			if fn == str {
+				deleteField(obj, fn)
+			}
+		}
+	}
+
+}
+
+func deleteField(obj interface{}, fieldName string) {
+
+	v := reflect.ValueOf(obj).Elem()
+	f := v.FieldByName(fieldName)
+
+	if f.IsValid() && f.CanSet() {
+
+		f.Set(reflect.Zero(f.Type()))
+	}
+}
+
+func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result *GHRetestResult) {
+
+	var errorNum int
+
+	for _, failedCheck := range failedChecks {
+
+		if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
+			log.Printf("retesting failed jobs (pr #{%d}): %v\n", pr.Number, failedCheck.Name)
+		} else {
+			log.Printf("restarting check (pr #{%d}): %v\n", pr.Number, failedCheck.Name)
+		}
+
+		if failedCheck.Config != nil {
+
+			rerun, response, err := githubClient.Checks.CreateCheckRun(
+				context.Background(),
+				rt.Owner,
+				rt.Repo,
+				github2.CreateCheckRunOptions{
+					Output: &github2.CheckRunOutput{
+						Text:    failedCheck.Config.(*github2.CheckRun).Output.Text,
+						Title:   failedCheck.Config.(*github2.CheckRun).Output.Title,
+						Summary: failedCheck.Config.(*github2.CheckRun).Output.Summary,
+					},
+					Status: failedCheck.Config.(*github2.CheckRun).Status,
+				},
+			)
+
+			if (response.StatusCode == 200 || response.StatusCode == 201) && err != nil {
+
+				if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
+
+					fmt.Printf("::notice::Retry success: (%s)\n", failedCheck.Name)
+				} else {
+
+					fmt.Printf("::notice::Check restarted: (%s)\n %s\n", failedCheck.Name, rerun.HTMLURL)
+				}
+			} else {
+
+				if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
+
+					core.Errorf("Retry failed: (%s) ... %v\n", failedCheck.Name, response.Status)
+				} else {
+
+					core.Errorf("Failed restarting check: %s\n", failedCheck.Name)
+				}
+
+				// error times ++
+				errorNum++
+			}
+		}
+
+	}
+
+	return &GHRetestResult{
+		Error:    errorNum,
+		Retested: len(failedChecks),
+	}
 }
 
 func retest() {
 
-	commands := InitRetestCommands()
-	pr := getPR(commands)
-	_ = getRetestActionTask(commands, pr)
+	rt := InitRetestCommands()
+	pr := getPR(rt)
+	failedCheckList := getRetestActionTask(rt, pr)
 
-	if commands.Debug {
-		log.Printf("commands runtime info: %v\n: ", commands)
+	if len(failedCheckList) == 0 {
+
+		log.Println("no failed checks found")
+		return
+	}
+
+	if rt.Debug {
+		log.Printf("Runtime info: %v\n: ", rt)
 		log.Printf("pr info: %v", pr)
+	}
+
+	result := retestRuns(pr, rt, failedCheckList)
+	if result.Error != 0 {
+
+		addReaction(rt, "-1")
+	}
+	if result.Error == 0 {
+
+		log.Println("all checks have been restarted")
+		addReaction(rt, "rocket")
+	} else {
+
+		log.Println("failed to restart some checks")
+		addReaction(rt, "confused")
 	}
 
 }
 
 func Run() {
+
+	defer func() {
+		if err := recover(); err != nil {
+
+			log.Println("retest error: ", err)
+			core.SetFailedf("Retest action failure: error:", err)
+		}
+	}()
 
 	retest()
 }

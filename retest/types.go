@@ -3,7 +3,7 @@ package retest
 type GHRetest struct {
 	Name   string
 	Url    string
-	method string
+	Config interface{}
 }
 
 type Runtime struct {
