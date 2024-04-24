@@ -33,4 +33,4 @@ LABEL "Name"="Github Pul Request Retest"
 RUN apt update -y && \
     apt install -y curl
 
-CMD ["gh-retest"]
+CMD ["gh-retest", "printenv"]
