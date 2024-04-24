@@ -182,7 +182,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 func checkRunsFiledReload(obj interface{}, toDelete ...string) {
 
-	t := reflect.TypeOf(obj)
+	t := reflect.TypeOf(obj).Elem()
 	fieldNames := make([]string, 0)
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
