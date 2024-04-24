@@ -113,8 +113,6 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 		nil,
 	)
 
-	fmt.Printf("%v\n", ref)
-
 	if response.StatusCode != 200 && err != nil {
 
 		log.Fatal("failed to get check runs")
@@ -123,7 +121,8 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 	var checkIds []*string
 	for _, check := range ref.CheckRuns {
 
-		fmt.Printf("check: %v\n", check)
+		fmt.Printf("check success - 2: %v\n", check.Conclusion)
+		fmt.Printf("check success - 3: %v\n", check.ExternalID)
 
 		if check.ExternalID == nil {
 
