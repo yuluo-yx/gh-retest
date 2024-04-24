@@ -1,23 +1,16 @@
-FROM docker.io/golang:1.22.2 AS builder
+FROM ubuntu:latest
 
-WORKDIR /workspace
+RUN apt-get update && apt-get install -y curl
 
-COPY retest/ retest/
-COPY go.mod go.mod
-COPY go.sum go.sum
-COPY main.go main.go
-COPY README.md README.md
-COPY LICENSE LICENSE
-COPY action.yml action.yml
+RUN curl -O https://dl.google.com/go/go1.22.2.linux-amd64.tar.gz
+RUN tar -xvf go1.22.2.linux-amd64.tar.gz
+RUN mv go /usr/local
 
-RUN CGO_ENABLED=0 go build -o gh-retest .
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="/go"
+ENV PATH="/go/bin:${PATH}"
 
-FROM docker.io/library/ubuntu:23.10
-
-COPY --from=builder /workspace/gh-retest /usr/local/bin/gh-retest
-COPY --from=builder /workspace/LICENSE /LICENSE
-COPY --from=builder /workspace/README.md /README.md
-COPY --from=builder /workspace/action.yml /action.yml
+RUN go --version
 
 LABEL "com.github.actions.name"="gh-retest"
 LABEL "com.github.actions.description"="gh-retest"
@@ -28,9 +21,18 @@ LABEL "repository"="https://github.com/yuluo-yx/gh-retest"
 LABEL "homepage"="https://github.com/yuluo-yx/gh-retest"
 LABEL "maintainer"="yuluo <yuluo08290126@gmail.com>"
 
-LABEL "Name"="Github Pul Request Retest"
+LABEL "Name"="Github Pull Request Retest"
 
-RUN apt update -y && \
-    apt install -y curl
+WORKDIR /app
 
-CMD ["ls", "/usr/local/bin"]
+COPY retest/ retest/
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY main.go main.go
+COPY LICENSE LICENSE
+COPY README.md README.md
+COPY action.yml action.yml
+
+RUN go build -o /usr/local/bin/retest main.go
+
+CMD ["retest"]
