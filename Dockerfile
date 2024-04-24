@@ -10,7 +10,7 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/go"
 ENV PATH="/go/bin:${PATH}"
 
-RUN go --version
+RUN go version
 
 LABEL "com.github.actions.name"="gh-retest"
 LABEL "com.github.actions.description"="gh-retest"
