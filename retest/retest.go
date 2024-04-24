@@ -31,6 +31,8 @@ func InitRetestCommands() *Runtime {
 		log.Fatal("GITHUB_REPOSITORY must not be nil")
 	}
 
+	fmt.Println(os.Getenv("INPUT_COMMENT-ID"))
+
 	return &Runtime{
 		Pr:      pr,
 		Comment: comment,
