@@ -142,6 +142,7 @@ func retest() {
 
 	commands := InitRetestCommands()
 	pr := getPR(commands)
+	_ = getRetestActionTask(commands, pr)
 
 	if commands.Debug {
 		log.Printf("commands runtime info: %v\n: ", commands)
