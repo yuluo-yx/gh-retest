@@ -48,8 +48,6 @@ func getPRNumber(pr string) int {
 	prSplit := strings.Split(pr, "/")
 	prNumber, _ := strconv.Atoi(prSplit[len(prSplit)-1])
 
-	fmt.Printf("%v\n", prNumber)
-
 	return prNumber
 }
 
@@ -66,9 +64,6 @@ func getPR(rt *Runtime) *PullRequest {
 		rt.Repo,
 		getPRNumber(rt.Pr),
 	)
-
-	fmt.Printf("%v\n", pr)
-	fmt.Printf("%v\n", prResp.StatusCode)
 
 	if pr == nil && prResp.StatusCode != 200 && err != nil {
 
@@ -100,7 +95,7 @@ func addReaction(rt *Runtime) bool {
 
 	if response.StatusCode != 200 && err != nil {
 
-		log.Fatal("failed to add reaction")
+		log.Fatal("failed to add reaction, error: ", err)
 		return false
 	}
 
@@ -118,6 +113,8 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 		nil,
 	)
 
+	fmt.Printf("%v\n", ref)
+
 	if response.StatusCode != 200 && err != nil {
 
 		log.Fatal("failed to get check runs")
@@ -126,7 +123,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 	var checkIds []*string
 	for _, check := range ref.CheckRuns {
 
-		fmt.Printf("%v\n", check)
+		fmt.Printf("check: %v\n", check)
 
 		if check.ExternalID == nil {
 
