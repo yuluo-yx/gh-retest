@@ -33,6 +33,4 @@ LABEL "Name"="Github Pul Request Retest"
 RUN apt update -y && \
     apt install -y curl
 
-# 设置 ENTRYPOINT
-ENTRYPOINT ["sh", "-c", "echo 'comment-id: $comment-id'; echo 'pr-url: $pr-url", "--"]
 CMD ["gh-retest"]
