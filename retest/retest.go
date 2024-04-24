@@ -306,13 +306,13 @@ func retest() {
 
 func Run() {
 
-	defer func() {
-		if err := recover(); err != nil {
-
-			log.Println("retest error: ", err)
-			core.SetFailedf("Retest action failure, error is ", err)
-		}
-	}()
+	//defer func() {
+	//	if err := recover(); err != nil {
+	//
+	//		log.Println("retest error: ", err)
+	//		core.SetFailedf("Retest action failure, error is ", err)
+	//	}
+	//}()
 
 	retest()
 }
