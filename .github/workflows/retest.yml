@@ -12,7 +12,7 @@ jobs:
     if: |
       ${{
          github.event.issue.pull_request
-         && github.repository == 'yuluo-yx/deigmata-paideias'
+         && github.repository == 'yuluo-yx/gh-retest'
          && github.actor != 'repokitteh-read-only[bot]'
          && github.actor != 'dependabot[bot]'
       }}
