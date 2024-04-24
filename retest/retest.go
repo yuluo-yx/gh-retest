@@ -26,8 +26,8 @@ func InitRetestCommands() *Runtime {
 	var repo, owner string
 
 	if nwo != "" {
-		repo = strings.Split(nwo, "/")[0]
-		owner = strings.Split(nwo, "/")[1]
+		owner = strings.Split(nwo, "/")[0]
+		repo = strings.Split(nwo, "/")[1]
 	} else {
 		log.Fatal("GITHUB_REPOSITORY must not be nil")
 	}
