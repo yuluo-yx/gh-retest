@@ -37,4 +37,4 @@ RUN go build -o /usr/local/bin/retest main.go && \
     chmod +x /usr/local/bin/retest && \
     ls -l /usr/local/bin/retest
 
-CMD ["retest"]
+ENTRYPOINT ["retest"]
