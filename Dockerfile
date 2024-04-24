@@ -20,7 +20,7 @@ COPY --from=builder /workspace/README.md /README.md
 COPY --from=builder /workspace/action.yml /action.yml
 
 LABEL "com.github.actions.name"="gh-retest"
-LABEL "com.github.actions.description"="github pull request retest command"
+LABEL "com.github.actions.description"="gh-retest"
 LABEL "com.github.actions.icon"="home"
 LABEL "com.github.actions.color"="red"
 
@@ -30,6 +30,7 @@ LABEL "maintainer"="yuluo <yuluo08290126@gmail.com>"
 
 LABEL "Name"="Github Pul Request Retest"
 
-RUN apt-get update -y
+RUN apt update -y && \
+    apt install -y curl
 
-CMD ["bash", "-c", "/usr/local/bin/gh-retest"]
+CMD ["gh-retest"]
