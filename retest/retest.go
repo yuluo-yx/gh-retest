@@ -48,6 +48,8 @@ func getPRNumber(pr string) int {
 	prSplit := strings.Split(pr, "/")
 	prNumber, _ := strconv.Atoi(prSplit[len(prSplit)-1])
 
+	fmt.Printf("%v\n", prNumber)
+
 	return prNumber
 }
 
