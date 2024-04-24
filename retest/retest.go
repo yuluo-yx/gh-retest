@@ -78,9 +78,9 @@ func getPR(rt *Runtime) *PullRequest {
 	}
 
 	return &PullRequest{
-		Branch: *pr.Head.Ref,
-		Number: *pr.Number,
-		Commit: *pr.Head.SHA,
+		Branch: pr.Head.GetRef(),
+		Number: pr.GetNumber(),
+		Commit: pr.Head.GetSHA(),
 	}
 
 }
@@ -122,7 +122,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 	for _, check := range ref.CheckRuns {
 
-		if check.ExternalID == nil {
+		if check.GetExternalID() == "" {
 
 			continue
 		}
@@ -132,18 +132,22 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 			log.Printf("rerun failed checks %v %v %v\n", *check.Name, *check.Conclusion, *check.ExternalID)
 		}
 
-		if *check.Conclusion == "failure" ||
-			*check.Conclusion == "timed_out" ||
-			*check.Conclusion == "cancelled" {
+		if check.GetConclusion() == "failure" ||
+			check.GetConclusion() == "timed_out" ||
+			check.GetConclusion() == "cancelled" {
 
-			if check.Name == nil {
+			if check.GetName() == "" {
 
 				*check.Name = "unknown"
 			}
 
 			failedChecks = append(failedChecks, &GHRetest{
-				Name: *check.Name,
-				Url:  fmt.Sprintf("/repos/%s/%s/actions/runs/%s/rerun-failed-jobs", rt.Owner, rt.Repo, *check.ExternalID),
+				Name: check.GetName(),
+				Url: fmt.Sprintf("/repos/%s/%s/actions/runs/%s/rerun-failed-jobs",
+					rt.Owner,
+					rt.Repo,
+					check.GetExternalID(),
+				),
 			})
 
 			// Create a new check from old failed check.
@@ -158,27 +162,22 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 				"Id",
 			}
 
-			fmt.Printf("output: %v\n", *check.Output)
-
 			checkRunsFiledReload(check, toDelete...)
 			checkRunsFiledReload(check, "url")
-			checkRunsFiledReload(check.Output, "annotation")
+			checkRunsFiledReload(check.GetOutput(), "annotation")
 
-			fmt.Printf("output: %v\n", *check.Output)
-			fmt.Printf("title: %s\n", *check.Output.Title)
-			fmt.Printf("text: %s\n", *check.Output.Text)
-			fmt.Printf("summary: %s\n", *check.Output.Summary)
-
-			*check.Output.Title = strings.Replace(*check.Output.Title, "failed", "restarted", 1)
-			lines := strings.Split(*check.Output.Text, "\n")
+			*check.GetOutput().Title = strings.Replace(check.GetOutput().GetTitle(), "failed", "restarted", 1)
+			lines := strings.Split(check.GetOutput().GetText(), "\n")
 			line0 := strings.Replace(lines[0], "Check run finished (failure :x:)", "Check run restarted", 1)
-			*check.Output.Text = fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))
-			*check.Output.Summary = "Check is running again"
+			*check.GetOutput().Text = fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))
+			*check.GetOutput().Summary = "Check is running again"
 			*check.Status = "in_progress"
+
+			fmt.Printf("update check: %v\n", check)
 
 			failedChecks = append(failedChecks, &GHRetest{
 
-				Name:   *check.Name,
+				Name:   check.GetName(),
 				Url:    fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
 				Config: check,
 			})
@@ -191,17 +190,23 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 func checkRunsFiledReload(obj interface{}, toDelete ...string) {
 
-	t := reflect.TypeOf(obj).Elem()
-	fieldNames := make([]string, 0)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		fieldNames = append(fieldNames, field.Name)
-	}
+	if len(toDelete) == 1 {
 
-	for _, fn := range fieldNames {
-		for _, str := range toDelete {
-			if fn == str {
-				deleteField(obj, fn)
+		deleteField(obj, toDelete[0])
+	} else {
+
+		t := reflect.TypeOf(obj).Elem()
+		fieldNames := make([]string, 0)
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			fieldNames = append(fieldNames, field.Name)
+		}
+
+		for _, fn := range fieldNames {
+			for _, str := range toDelete {
+				if fn == str {
+					deleteField(obj, fn)
+				}
 			}
 		}
 	}
