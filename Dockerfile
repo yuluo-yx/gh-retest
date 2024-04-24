@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 go build -o gh-retest .
 
 FROM docker.io/library/ubuntu:23.10
 
-COPY --from=builder /workspace/gh-retest /gh-retest
+COPY --from=builder /workspace/gh-retest /usr/local/bin/gh-retest
 COPY --from=builder /workspace/LICENSE /LICENSE
 COPY --from=builder /workspace/README.md /README.md
 COPY --from=builder /workspace/action.yml /action.yml
@@ -30,6 +30,6 @@ LABEL "maintainer"="yuluo <yuluo08290126@gmail.com>"
 
 LABEL "Name"="Github Pul Request Retest"
 
-RUN chmod +x /gh-retest
+RUN apt-get update -y
 
-CMD ["bash", "-c", "/gh-retest"]
+CMD ["bash", "-c", "/usr/local/bin/gh-retest"]
