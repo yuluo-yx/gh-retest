@@ -32,4 +32,4 @@ LABEL "Name"="Github Pul Request Retest"
 
 RUN apt update -y
 
-CMD ["gh-retest"]
+CMD ["ls", "-a", "gh-retest"]
