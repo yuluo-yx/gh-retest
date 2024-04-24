@@ -162,6 +162,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 			checkRunsFiledReload(check, "url")
 			checkRunsFiledReload(check.Output, "annotation")
 
+			fmt.Printf("output: %v\n", *check.Output)
 			fmt.Printf("title: %s\n", *check.Output.Title)
 			fmt.Printf("text: %s\n", *check.Output.Text)
 			fmt.Printf("summary: %s\n", *check.Output.Summary)
