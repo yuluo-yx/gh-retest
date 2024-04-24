@@ -1,6 +1,7 @@
 package retest
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -31,8 +32,6 @@ func InitRetestCommands() *Runtime {
 		log.Fatal("GITHUB_REPOSITORY must not be nil")
 	}
 
-	fmt.Println(os.Getenv("INPUT_COMMENT-ID"))
-
 	return &Runtime{
 		Pr:      pr,
 		Comment: comment,
@@ -41,6 +40,15 @@ func InitRetestCommands() *Runtime {
 		Owner:   owner,
 		Debug:   debug,
 	}
+
+}
+
+func getPRNumber(pr string) int {
+
+	prSplit := strings.Split(pr, "/")
+	prNumber, _ := strconv.Atoi(prSplit[len(prSplit)-1])
+
+	return prNumber
 }
 
 func getPR(rt *Runtime) *PullRequest {
@@ -49,58 +57,97 @@ func getPR(rt *Runtime) *PullRequest {
 		log.Fatal("env.pr url is nil")
 	}
 
-	fmt.Println(rt.Pr)
+	pr, prResp, err := githubClient.PullRequests.Get(
+		context.Background(),
+		rt.Owner,
+		rt.Repo,
+		getPRNumber(rt.Pr),
+	)
 
-	prResp, err := githubClient.Client().Get(rt.Pr)
-	if prResp == nil && err != nil {
-		log.Fatal(err.Error())
+	if pr == nil && prResp.StatusCode != 200 && err != nil {
+
+		log.Fatal("pr not found")
 	}
 
 	if rt.Debug {
+
 		log.Println("pr retest number: ", prResp.Body)
 	}
 
 	return &PullRequest{
-		Branch: "",
-		Number: 12,
-		Commit: "",
+		Branch: *pr.Head.Ref,
+		Number: *pr.Number,
+		Commit: *pr.Head.SHA,
 	}
 
 }
 
-func getComment(rt *Runtime) bool {
+func addReaction(rt *Runtime) bool {
 
-	//githubClient.Issues.ListComments(
-	//	context.Background(),
-	//	rt.Owner,
-	//	rt.Repo,
-	//	rt.Pr,
-	//	nil,
-	//)
-	//fmt.Println(comments)
+	_, response, err := githubClient.Reactions.CreateCommentReaction(
+		context.Background(),
+		rt.Owner,
+		rt.Repo,
+		int64(rt.Comment),
+		"rocket",
+	)
 
-	return false
+	if response.StatusCode != 200 && err != nil {
 
+		log.Fatal("failed to add reaction")
+		return false
+	}
+
+	return true
+
+}
+
+func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest) {
+
+	ref, response, err := githubClient.Checks.ListCheckRunsForRef(
+		context.Background(),
+		rt.Owner,
+		rt.Repo,
+		pr.Commit,
+		nil,
+	)
+
+	if response.StatusCode != 200 && err != nil {
+
+		log.Fatal("failed to get check runs")
+	}
+
+	var checkIds []*string
+	for _, check := range ref.CheckRuns {
+
+		fmt.Printf("%v\n", check)
+
+		if check.ExternalID == nil {
+
+			continue
+		}
+
+		checkIds = append(checkIds, check.ExternalID)
+	}
+
+	retestTasks = append(retestTasks, &GHRetest{})
+
+	return nil
 }
 
 func retest() {
 
 	commands := InitRetestCommands()
-
-	fmt.Printf("%v\n", commands)
-
 	pr := getPR(commands)
 
-	fmt.Println(pr)
-
-	if rerun := getComment(commands); rerun {
-		fmt.Println(rerun)
-	} else {
-		fmt.Println("no rerun")
+	if commands.Debug {
+		log.Printf("commands runtime info: %v\n: ", commands)
+		log.Printf("pr info: %v", pr)
 	}
 
 }
 
 func Run() {
+
 	retest()
 }
