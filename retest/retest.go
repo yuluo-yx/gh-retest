@@ -166,7 +166,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 			checkRunsFiledReload(check, "url")
 			checkRunsFiledReload(check.GetOutput(), "annotation")
 
-			fmt.Printf("output: %v\n", check.GetOutput())
+			fmt.Printf("output: %v\n", check)
 			fmt.Printf("title: %v\n", check.GetOutput().GetTitle())
 
 			*check.GetOutput().Title = strings.Replace(check.GetOutput().GetTitle(), "failed", "restarted", 1)
