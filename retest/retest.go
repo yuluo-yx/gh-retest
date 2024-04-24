@@ -158,6 +158,8 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 				"Id",
 			}
 
+			fmt.Printf("output: %v\n", *check.Output)
+
 			checkRunsFiledReload(check, toDelete...)
 			checkRunsFiledReload(check, "url")
 			checkRunsFiledReload(check.Output, "annotation")
@@ -175,6 +177,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 			*check.Status = "in_progress"
 
 			failedChecks = append(failedChecks, &GHRetest{
+
 				Name:   *check.Name,
 				Url:    fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
 				Config: check,
