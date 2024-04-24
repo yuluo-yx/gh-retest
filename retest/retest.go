@@ -121,8 +121,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (retestTasks []*GHRetest)
 	var checkIds []*string
 	for _, check := range ref.CheckRuns {
 
-		fmt.Printf("check success - 2: %v\n", *check.Conclusion)
-		fmt.Printf("check success - 3: %v\n", *check.ExternalID)
+		fmt.Printf("check success - 2: %v-%v-%v\n", *check.Name, *check.Conclusion, *check.CheckSuite)
 
 		if check.ExternalID == nil {
 
