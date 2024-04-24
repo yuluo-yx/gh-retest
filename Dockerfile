@@ -30,7 +30,6 @@ LABEL "maintainer"="yuluo <yuluo08290126@gmail.com>"
 
 LABEL "Name"="Github Pul Request Retest"
 
-RUN apt update -y && \
-    apt install -y curl
+RUN apt update -y
 
-CMD ["gh-retest", "printenv"]
+CMD ["printenv", "gh-retest"]
