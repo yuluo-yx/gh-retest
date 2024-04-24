@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y curl
 
 RUN curl -O https://dl.google.com/go/go1.22.2.linux-amd64.tar.gz
 RUN tar -xvf go1.22.2.linux-amd64.tar.gz
-RUN mv go /usr/local
+RUN mv -f go /usr/local
 
 ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/go"
