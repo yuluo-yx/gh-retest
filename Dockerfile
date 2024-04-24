@@ -33,6 +33,8 @@ COPY LICENSE LICENSE
 COPY README.md README.md
 COPY action.yml action.yml
 
-RUN go build -o /usr/local/bin/retest main.go
+RUN go build -o /usr/local/bin/retest main.go && \
+    chmod +x /usr/local/bin/retest && \
+    ls -l /usr/local/bin/retest
 
 CMD ["retest"]
