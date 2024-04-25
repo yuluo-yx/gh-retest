@@ -95,7 +95,7 @@ func addReaction(rt *Runtime, content string) bool {
 
 	fmt.Printf("comment %v = %v\n", rt.Comment, comment)
 
-	_, response, err := githubClient.Reactions.CreateIssueReaction(
+	_, response, err := githubClient.Reactions.CreateIssueCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
