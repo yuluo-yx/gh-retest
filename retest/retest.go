@@ -154,7 +154,7 @@ func rerunJobs(rt *Runtime, failedJobs []*GHRetest) (result *GHRetestResult) {
 		job := new(github2.WorkflowJob)
 		resp, err := githubClient.Do(context.Background(), req, job)
 
-		if resp.StatusCode != 200 || resp.StatusCode != 201 && err != nil {
+		if resp.StatusCode != 201 && err != nil {
 
 			errorNum++
 			log.Fatal("failed to retest job, error: ", err)
