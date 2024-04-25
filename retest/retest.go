@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -67,7 +66,7 @@ func getPR(rt *Runtime) *PullRequest {
 		getPRNumber(rt.Pr),
 	)
 
-	if pr == nil && prResp.StatusCode != 200 && err != nil {
+	if pr == nil && (prResp.StatusCode != 200 || prResp.StatusCode != 201) && err != nil {
 
 		log.Fatal("pr not found, err: ", err)
 	}
@@ -95,7 +94,7 @@ func addReaction(rt *Runtime, content string) bool {
 		content,
 	)
 
-	if response.StatusCode != 200 && err != nil {
+	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
 
 		log.Fatal("failed to add reaction, error: ", err)
 		return false
@@ -115,7 +114,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 		nil,
 	)
 
-	if response.StatusCode != 200 && err != nil {
+	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
 
 		log.Fatal("failed to get check runs")
 	}
@@ -138,7 +137,7 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 			if check.GetName() == "" {
 
-				*check.Name = "unknown"
+				check.Name = stringPtr("unknown")
 			}
 
 			failedChecks = append(failedChecks, &GHRetest{
@@ -150,39 +149,21 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 				),
 			})
 
-			// Create a new check from old failed check.
-			toDelete := []string{
-				"PullRequests",
-				"App",
-				"CheckSuite",
-				"Conclusion",
-				"NodeId",
-				"StartedAt",
-				"CompletedAt",
-				"Id",
-			}
-
-			checkRunsFiledReload(check, toDelete...)
-			checkRunsFiledReload(check, "url")
-			checkRunsFiledReload(check.GetOutput(), "annotation")
-
-			fmt.Printf("output: %v\n", check)
-			fmt.Printf("title: %v\n", check.GetOutput().GetTitle())
-
-			*check.GetOutput().Title = strings.Replace(check.GetOutput().GetTitle(), "failed", "restarted", 1)
 			lines := strings.Split(check.GetOutput().GetText(), "\n")
 			line0 := strings.Replace(lines[0], "Check run finished (failure :x:)", "Check run restarted", 1)
-			*check.GetOutput().Text = fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))
-			*check.GetOutput().Summary = "Check is running again"
-			*check.Status = "in_progress"
-
-			fmt.Printf("update check: %v\n", check)
 
 			failedChecks = append(failedChecks, &GHRetest{
 
-				Name:   check.GetName(),
-				Url:    fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
-				Config: check,
+				Name: check.GetName(),
+				Url:  fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
+				Config: &github2.CreateCheckRunOptions{
+					Output: &github2.CheckRunOutput{
+						Title:   stringPtr("restarted"),
+						Text:    stringPtr(fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))),
+						Summary: stringPtr("Check is running again"),
+					},
+					Status: stringPtr("in_progress"),
+				},
 			})
 		}
 
@@ -191,40 +172,9 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 	return failedChecks
 }
 
-func checkRunsFiledReload(obj interface{}, toDelete ...string) {
+func stringPtr(str string) *string {
 
-	if len(toDelete) == 1 {
-
-		deleteField(obj, toDelete[0])
-	} else {
-
-		t := reflect.TypeOf(obj).Elem()
-		fieldNames := make([]string, 0)
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i)
-			fieldNames = append(fieldNames, field.Name)
-		}
-
-		for _, fn := range fieldNames {
-			for _, str := range toDelete {
-				if fn == str {
-					deleteField(obj, fn)
-				}
-			}
-		}
-	}
-
-}
-
-func deleteField(obj interface{}, fieldName string) {
-
-	v := reflect.ValueOf(obj).Elem()
-	f := v.FieldByName(fieldName)
-
-	if f.IsValid() && f.CanSet() {
-
-		f.Set(reflect.Zero(f.Type()))
-	}
+	return &str
 }
 
 func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result *GHRetestResult) {
@@ -245,14 +195,7 @@ func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result 
 				context.Background(),
 				rt.Owner,
 				rt.Repo,
-				github2.CreateCheckRunOptions{
-					Output: &github2.CheckRunOutput{
-						Text:    failedCheck.Config.(*github2.CheckRun).Output.Text,
-						Title:   failedCheck.Config.(*github2.CheckRun).Output.Title,
-						Summary: failedCheck.Config.(*github2.CheckRun).Output.Summary,
-					},
-					Status: failedCheck.Config.(*github2.CheckRun).Status,
-				},
+				*failedCheck.Config.(*github2.CreateCheckRunOptions),
 			)
 
 			if (response.StatusCode == 200 || response.StatusCode == 201) && err != nil {
