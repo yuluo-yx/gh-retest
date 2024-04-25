@@ -80,15 +80,13 @@ func getPR(rt *Runtime) *PullRequest {
 
 func addReaction(rt *Runtime, content string) bool {
 
-	commentR, response, err := githubClient.Reactions.CreateIssueCommentReaction(
+	_, response, err := githubClient.Reactions.CreateIssueCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
 		int64(rt.Comment),
 		content,
 	)
-
-	fmt.Printf("%v\n", commentR.GetContent())
 
 	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
 
@@ -116,10 +114,12 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 	}
 
-	fmt.Printf("ListCheckRunsForRef: %v\n", ref)
-
 	for i, run := range ref.CheckRuns {
-		fmt.Printf("CheckRuns 检查到任务: %d, %v\n", i, run)
+		if run.GetStatus() != "success" {
+
+			fmt.Printf("CheckRuns 检查到失败任务: %d, %v\n", i, run)
+		}
+
 	}
 
 	return failedChecks
@@ -145,7 +145,6 @@ func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result 
 func retest() {
 
 	rt := InitRetestCommands()
-	rt.Debug = true
 	pr := getPR(rt)
 	failedCheckList := getRetestActionTask(rt, pr)
 
