@@ -143,7 +143,7 @@ func rerunJobs(rt *Runtime, failedJobs []*GHRetest) (result *GHRetestResult) {
 
 		fmt.Printf("retesting check: %v\n %v\n", job.Name, job.Url)
 
-		u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v", rt.Owner, rt.Repo, getSuffix(job.Url))
+		u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v/rerun", rt.Owner, rt.Repo, getSuffix(job.Url))
 		req, err := githubClient.NewRequest(http.MethodPost, u, nil)
 
 		if err != nil {
