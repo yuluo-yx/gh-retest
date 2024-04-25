@@ -99,7 +99,7 @@ func addReaction(rt *Runtime, content string) bool {
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
-		rt.Comment,
+		int64(rt.Comment),
 		content,
 	)
 
