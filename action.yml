@@ -1,4 +1,4 @@
-name: "Retest"
+name: "Github Pull Request Retest"
 description: 'Re-run failed GitHub Workflow runs on PRs by commenting "/retest".'
 author: "yuluo"
 inputs:
