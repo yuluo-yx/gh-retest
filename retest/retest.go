@@ -114,10 +114,18 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 	}
 
-	for i, run := range ref.CheckRuns {
-		if run.GetStatus() != "success" {
+	for order, run := range ref.CheckRuns {
 
-			fmt.Printf("CheckRuns 检查到失败任务: %d, %v\n", i, run)
+		if rt.Debug {
+			log.Printf("check run: %v, order: %v\n", run, order)
+		}
+
+		if run.GetConclusion() == "failure" {
+
+			failedChecks = append(failedChecks, &GHRetest{
+				Name: run.GetName(),
+				Url:  run.GetDetailsURL(),
+			})
 		}
 
 	}
@@ -125,16 +133,14 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 	return failedChecks
 }
 
-func stringPtr(str string) *string {
-
-	return &str
-}
-
 func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result *GHRetestResult) {
 
-	errorNum := 0
+	var errorNum int
 
-	fmt.Printf("进入 retest runs 函数！\n")
+	for _, check := range failedChecks {
+
+		fmt.Printf("retesting check: %v\n %v\n", check.Name, check.Url)
+	}
 
 	return &GHRetestResult{
 		Error:    errorNum,
