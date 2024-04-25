@@ -1,0 +1,19 @@
+Name: Build And Retest
+
+on:
+    - push
+    - pull_request
+  
+  jobs:
+    Test:
+      runs-on: ubuntu:latest
+      steps:
+        - name: Set up Go
+          uses: actions/setup-go@v3
+          with:
+            go-version: 1.22
+        - uses: actions/checkout@v3.0.0
+        - name: Test
+          run: |
+            go test ./... -coverprofile coverage.out
+

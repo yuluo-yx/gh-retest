@@ -67,7 +67,7 @@ func getPR(rt *Runtime) *PullRequest {
 		getSuffix(rt.Pr),
 	)
 
-	if pr == nil && (prResp.StatusCode != 200 || prResp.StatusCode != 201) && err != nil {
+	if pr == nil && prResp.StatusCode != 200 && prResp.StatusCode != 201 && err != nil {
 
 		log.Fatal("pr not found, err: ", err)
 	}
@@ -90,7 +90,7 @@ func addReaction(rt *Runtime, content string) bool {
 		content,
 	)
 
-	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
+	if response.StatusCode != 200 && response.StatusCode != 201 && err != nil {
 
 		log.Fatal("failed to add reaction, error: ", err)
 		return false
@@ -110,7 +110,7 @@ func getFailedJos(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest) {
 		nil,
 	)
 
-	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
+	if response.StatusCode != 200 && response.StatusCode != 201 && err != nil {
 
 		log.Fatal("failed to get check runs, error: ", err)
 
@@ -209,7 +209,7 @@ func Run() {
 		if err := recover(); err != nil {
 
 			log.Println("retest error: ", err)
-			core.SetFailedf("Retest action failure, error is ", err)
+			core.SetFailedf("Retest action failure, error is %v\n", err)
 		}
 	}()
 
