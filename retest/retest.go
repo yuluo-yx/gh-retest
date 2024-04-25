@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/actions-go/toolkit/core"
 	"github.com/actions-go/toolkit/github"
+	github2 "github.com/google/go-github/v42/github"
 )
 
 var (
@@ -43,7 +45,7 @@ func InitRetestCommands() *Runtime {
 
 }
 
-func getPRNumber(pr string) int {
+func getSuffix(pr string) int {
 
 	prSplit := strings.Split(pr, "/")
 	prNumber, _ := strconv.Atoi(prSplit[len(prSplit)-1])
@@ -62,7 +64,7 @@ func getPR(rt *Runtime) *PullRequest {
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
-		getPRNumber(rt.Pr),
+		getSuffix(rt.Pr),
 	)
 
 	if pr == nil && (prResp.StatusCode != 200 || prResp.StatusCode != 201) && err != nil {
@@ -98,7 +100,7 @@ func addReaction(rt *Runtime, content string) bool {
 
 }
 
-func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest) {
+func getFailedJos(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest) {
 
 	ref, response, err := githubClient.Checks.ListCheckRunsForRef(
 		context.Background(),
@@ -133,18 +135,37 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 	return failedChecks
 }
 
-func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result *GHRetestResult) {
+func rerunJobs(rt *Runtime, failedJobs []*GHRetest) (result *GHRetestResult) {
 
 	var errorNum int
 
-	for _, check := range failedChecks {
+	for _, job := range failedJobs {
 
-		fmt.Printf("retesting check: %v\n %v\n", check.Name, check.Url)
+		fmt.Printf("retesting check: %v\n %v\n", job.Name, job.Url)
+
+		u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v", rt.Owner, rt.Repo, getSuffix(job.Url))
+		req, err := githubClient.NewRequest(http.MethodPost, u, nil)
+
+		if err != nil {
+			log.Fatal("failed to create request, error: ", err)
+			return nil
+		}
+
+		job := new(github2.WorkflowJob)
+		resp, err := githubClient.Do(context.Background(), req, job)
+
+		if resp.StatusCode != 200 || resp.StatusCode != 201 && err != nil {
+
+			errorNum++
+			log.Fatal("failed to retest job, error: ", err)
+			return nil
+		}
+
 	}
 
 	return &GHRetestResult{
 		Error:    errorNum,
-		Retested: len(failedChecks),
+		Retested: len(failedJobs),
 	}
 }
 
@@ -152,9 +173,9 @@ func retest() {
 
 	rt := InitRetestCommands()
 	pr := getPR(rt)
-	failedCheckList := getRetestActionTask(rt, pr)
+	failedJosList := getFailedJos(rt, pr)
 
-	if len(failedCheckList) == 0 {
+	if len(failedJosList) == 0 {
 
 		log.Println("no failed checks found")
 		return
@@ -165,7 +186,7 @@ func retest() {
 		log.Printf("pr info: %v", pr)
 	}
 
-	result := retestRuns(pr, rt, failedCheckList)
+	result := rerunJobs(rt, failedJosList)
 	if result.Error != 0 {
 
 		addReaction(rt, "-1")
