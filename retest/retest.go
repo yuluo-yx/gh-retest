@@ -10,7 +10,6 @@ import (
 
 	"github.com/actions-go/toolkit/core"
 	"github.com/actions-go/toolkit/github"
-	github2 "github.com/google/go-github/v42/github"
 )
 
 var (
@@ -71,11 +70,6 @@ func getPR(rt *Runtime) *PullRequest {
 		log.Fatal("pr not found, err: ", err)
 	}
 
-	if rt.Debug {
-
-		log.Println("pr retest number: ", prResp.Body)
-	}
-
 	return &PullRequest{
 		Branch: pr.Head.GetRef(),
 		Number: pr.GetNumber(),
@@ -118,61 +112,14 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
 
-		log.Fatal("failed to get check runs")
+		log.Fatal("failed to get check runs, error: ", err)
+
 	}
 
-	for _, check := range ref.CheckRuns {
+	fmt.Printf("ListCheckRunsForRef: %v\n", ref)
 
-		if rt.Debug {
-			log.Printf("\n%v\n", check)
-		}
-
-		if check.GetExternalID() == "" {
-
-			continue
-		}
-
-		if rt.Debug {
-
-			log.Printf("rerun failed checks %v %v %v\n", *check.Name, *check.Conclusion, *check.ExternalID)
-		}
-
-		if check.GetConclusion() == "failure" ||
-			check.GetConclusion() == "timed_out" ||
-			check.GetConclusion() == "cancelled" {
-
-			if check.GetName() == "" {
-
-				check.Name = stringPtr("unknown")
-			}
-
-			failedChecks = append(failedChecks, &GHRetest{
-				Name: check.GetName(),
-				Url: fmt.Sprintf("/repos/%s/%s/actions/runs/%s/rerun-failed-jobs",
-					rt.Owner,
-					rt.Repo,
-					check.GetExternalID(),
-				),
-			})
-
-			lines := strings.Split(check.GetOutput().GetText(), "\n")
-			line0 := strings.Replace(lines[0], "Check run finished (failure :x:)", "Check run restarted", 1)
-
-			failedChecks = append(failedChecks, &GHRetest{
-
-				Name: check.GetName(),
-				Url:  fmt.Sprintf("/repos/%s/%s/check-runs", rt.Owner, rt.Repo),
-				Config: &github2.CreateCheckRunOptions{
-					Output: &github2.CheckRunOutput{
-						Title:   stringPtr("restarted"),
-						Text:    stringPtr(fmt.Sprintf("%s\n%s", line0, strings.Join(lines[1:], "\n"))),
-						Summary: stringPtr("Check is running again"),
-					},
-					Status: stringPtr("in_progress"),
-				},
-			})
-		}
-
+	for i, run := range ref.CheckRuns {
+		fmt.Printf("CheckRuns 检查到任务: %d, %v\n", i, run)
 	}
 
 	return failedChecks
@@ -185,54 +132,9 @@ func stringPtr(str string) *string {
 
 func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result *GHRetestResult) {
 
-	var errorNum int
+	errorNum := 0
 
-	for _, failedCheck := range failedChecks {
-
-		if rt.Debug {
-			log.Printf("retest runs: %v\n, name: %v\n, url: %v\n", failedChecks, failedCheck.Name, failedCheck.Url)
-		}
-
-		if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
-			log.Printf("retesting failed jobs (pr #{%d}): %v\n", pr.Number, failedCheck.Name)
-		} else {
-			log.Printf("restarting check (pr #{%d}): %v\n", pr.Number, failedCheck.Name)
-		}
-
-		if failedCheck.Config != nil {
-
-			rerun, response, err := githubClient.Checks.CreateCheckRun(
-				context.Background(),
-				rt.Owner,
-				rt.Repo,
-				*failedCheck.Config.(*github2.CreateCheckRunOptions),
-			)
-
-			if (response.StatusCode == 200 || response.StatusCode == 201) && err != nil {
-
-				if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
-
-					fmt.Printf("::notice::Retry success: (%s)\n", failedCheck.Name)
-				} else {
-
-					fmt.Printf("::notice::Check restarted: (%s)\n %s\n", failedCheck.Name, rerun.HTMLURL)
-				}
-			} else {
-
-				if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
-
-					core.Errorf("Retry failed: (%s) ... %v\n", failedCheck.Name, response.Status)
-				} else {
-
-					core.Errorf("Failed restarting check: %s\n", failedCheck.Name)
-				}
-
-				// error times ++
-				errorNum++
-			}
-		}
-
-	}
+	fmt.Printf("进入 retest runs 函数！\n")
 
 	return &GHRetestResult{
 		Error:    errorNum,
