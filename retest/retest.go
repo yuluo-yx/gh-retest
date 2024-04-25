@@ -86,30 +86,20 @@ func getPR(rt *Runtime) *PullRequest {
 
 func addReaction(rt *Runtime, content string) bool {
 
-	list, _, _ := githubClient.PullRequests.ListComments(
-		context.Background(),
-		rt.Owner,
-		rt.Repo,
-		4,
-		nil,
-	)
-
-	fmt.Printf("%v\n", list)
-
-	c, _, _ := githubClient.PullRequests.GetComment(
+	comment, _, _ := githubClient.Repositories.GetComment(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
 		int64(rt.Comment),
 	)
 
-	fmt.Printf("%v\n", c)
+	fmt.Printf("comment %v = %v\n", rt.Comment, comment)
 
-	_, response, err := githubClient.Reactions.CreateCommentReaction(
+	_, response, err := githubClient.Reactions.CreateIssueReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
-		int64(rt.Comment),
+		rt.Comment,
 		content,
 	)
 
