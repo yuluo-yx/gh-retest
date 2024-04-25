@@ -1,6 +1,8 @@
 name: "Github Pull Request Retest"
 description: 'Re-run failed GitHub Workflow runs on PRs by commenting "/retest".'
 author: "yuluo"
+icons: activity
+color: blue
 inputs:
   token:
     description: >
