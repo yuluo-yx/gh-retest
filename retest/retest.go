@@ -123,6 +123,10 @@ func getRetestActionTask(rt *Runtime, pr *PullRequest) (failedChecks []*GHRetest
 
 	for _, check := range ref.CheckRuns {
 
+		if rt.Debug {
+			log.Printf("\n%v\n", check)
+		}
+
 		if check.GetExternalID() == "" {
 
 			continue
@@ -184,6 +188,10 @@ func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result 
 	var errorNum int
 
 	for _, failedCheck := range failedChecks {
+
+		if rt.Debug {
+			log.Printf("retest runs: %v\n, name: %v\n, url: %v\n", failedChecks, failedCheck.Name, failedCheck.Url)
+		}
 
 		if strings.HasPrefix(failedCheck.Url, "rerun-failed-jobs") {
 			log.Printf("retesting failed jobs (pr #{%d}): %v\n", pr.Number, failedCheck.Name)
@@ -268,13 +276,13 @@ func retest() {
 
 func Run() {
 
-	//defer func() {
-	//	if err := recover(); err != nil {
-	//
-	//		log.Println("retest error: ", err)
-	//		core.SetFailedf("Retest action failure, error is ", err)
-	//	}
-	//}()
+	defer func() {
+		if err := recover(); err != nil {
+
+			log.Println("retest error: ", err)
+			core.SetFailedf("Retest action failure, error is ", err)
+		}
+	}()
 
 	retest()
 }
