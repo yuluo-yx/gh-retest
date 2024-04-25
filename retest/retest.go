@@ -243,6 +243,7 @@ func retestRuns(pr *PullRequest, rt *Runtime, failedChecks []*GHRetest) (result 
 func retest() {
 
 	rt := InitRetestCommands()
+	rt.Debug = true
 	pr := getPR(rt)
 	failedCheckList := getRetestActionTask(rt, pr)
 
