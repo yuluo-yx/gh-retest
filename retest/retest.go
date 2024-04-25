@@ -86,22 +86,17 @@ func getPR(rt *Runtime) *PullRequest {
 
 func addReaction(rt *Runtime, content string) bool {
 
-	comment, _, _ := githubClient.Repositories.GetComment(
-		context.Background(),
-		rt.Owner,
-		rt.Repo,
-		int64(rt.Comment),
-	)
-
 	fmt.Printf("comment %v = %v\n", rt.Comment, comment)
 
-	_, response, err := githubClient.Reactions.CreateIssueCommentReaction(
+	commentR, response, err := githubClient.Reactions.CreateIssueCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
 		int64(rt.Comment),
 		content,
 	)
+
+	fmt.Printf("%v\n", commentR.GetContent())
 
 	if (response.StatusCode != 200 || response.StatusCode != 201) && err != nil {
 
@@ -267,7 +262,7 @@ func retest() {
 		addReaction(rt, "rocket")
 	} else {
 
-		log.Println("failed to restart some checks")
+		log.Printf("failed to restart some checks, error times: %v\n", result.Error)
 		addReaction(rt, "confused")
 	}
 
