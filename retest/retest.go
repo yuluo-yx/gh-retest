@@ -86,7 +86,7 @@ func getPR(rt *Runtime) *PullRequest {
 
 func addReaction(rt *Runtime, content string) bool {
 
-	_, response, err := githubClient.Reactions.CreateCommentReaction(
+	_, response, err := githubClient.Reactions.CreatePullRequestCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
