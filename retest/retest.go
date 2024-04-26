@@ -105,7 +105,10 @@ func getPRCommentContent(rt *Runtime) bool {
 		return false
 	}
 
-	fmt.Printf("comment content: %v\n", comment.GetBody())
+	if rt.Debug {
+		log.Printf("comment: %v\n", comment.GetBody())
+	}
+
 	if comment.GetBody() == Retest {
 
 		return true
@@ -175,7 +178,9 @@ func rerunJobs(rt *Runtime, failedJobs []*GHRetest) (result *GHRetestResult) {
 
 	for _, job := range failedJobs {
 
-		fmt.Printf("retesting check: %v\n %v\n", job.Name, job.Url)
+		if rt.Debug {
+			log.Printf("retesting check: %v\n %v\n", job.Name, job.Url)
+		}
 
 		u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v/rerun", rt.Owner, rt.Repo, getSuffix(job.Url))
 		req, err := githubClient.NewRequest(http.MethodPost, u, nil)
