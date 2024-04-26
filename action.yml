@@ -22,9 +22,6 @@ inputs:
     description: >-
       URL to fetch PR information
     required: true
-  args:
-    description: >-
-      Args passed to command (not currently used)
 
 runs:
   using: 'docker'

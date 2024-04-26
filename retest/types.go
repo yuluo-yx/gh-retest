@@ -7,12 +7,12 @@ type GHRetest struct {
 }
 
 type Runtime struct {
-	Comment int
-	Debug   bool
-	Pr      string
-	Nwo     string
-	Owner   string
-	Repo    string
+	CommentId int64
+	Debug     bool
+	Pr        string
+	Nwo       string
+	Owner     string
+	Repo      string
 }
 
 type GHRetestResult struct {
