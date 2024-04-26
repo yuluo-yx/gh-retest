@@ -86,12 +86,18 @@ func getPR(rt *Runtime) *PullRequest {
 
 func getPRCommentContent(rt *Runtime) bool {
 
-	comment, response, err := githubClient.PullRequests.GetComment(
-		context.Background(),
-		rt.Owner,
-		rt.Repo,
-		rt.CommentId,
+	req, err := githubClient.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("/repos/%v/%v/issues/comments/%v", rt.Owner, rt.Repo, rt.CommentId),
+		nil,
 	)
+	if err != nil {
+		log.Fatal("failed to create request, error: ", err)
+		return false
+	}
+
+	var comment = &github2.IssueComment{}
+	response, err := githubClient.Do(context.Background(), req, comment)
 
 	if response.StatusCode != 200 && response.StatusCode != 201 && err != nil {
 

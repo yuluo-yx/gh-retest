@@ -11,7 +11,7 @@ import (
 func Test(t *testing.T) {
 	setup()
 
-	testInitRetestCommands_ExistEnvs(t)
+	testinitretestcommandsExistenvs(t)
 
 	teardown()
 }
@@ -28,7 +28,7 @@ func teardown() {
 	os.Unsetenv("CI_DEBUG")
 }
 
-func testInitRetestCommands_ExistEnvs(t *testing.T) {
+func testinitretestcommandsExistenvs(t *testing.T) {
 
 	rt := retest.InitRetestCommands()
 
@@ -36,11 +36,5 @@ func testInitRetestCommands_ExistEnvs(t *testing.T) {
 	assert.Equal(t, "owner", rt.Owner)
 	assert.Equal(t, "owner/repo", rt.Nwo)
 	assert.True(t, rt.Debug)
-
-}
-
-func testRuns(t *testing.T) {
-
-	rt := retest.InitRetestCommands()
 
 }
