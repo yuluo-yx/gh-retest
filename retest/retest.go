@@ -18,10 +18,14 @@ var (
 	githubClient = github.NewClient()
 )
 
+const (
+	Retest = "/retest"
+)
+
 func InitRetestCommands() *Runtime {
 
 	commentInput, _ := core.GetInput("comment-id")
-	comment, _ := strconv.Atoi(commentInput)
+	CommentId, _ := strconv.Atoi(commentInput)
 	pr, _ := core.GetInput("pr-url")
 	nwo := os.Getenv("GITHUB_REPOSITORY")
 	debug := os.Getenv("CI_DEBUG") != "" && os.Getenv("CI_DEBUG") != "false"
@@ -35,12 +39,12 @@ func InitRetestCommands() *Runtime {
 	}
 
 	return &Runtime{
-		Pr:      pr,
-		Comment: comment,
-		Repo:    repo,
-		Nwo:     nwo,
-		Owner:   owner,
-		Debug:   debug,
+		Pr:        pr,
+		CommentId: int64(CommentId),
+		Repo:      repo,
+		Nwo:       nwo,
+		Owner:     owner,
+		Debug:     debug,
 	}
 
 }
@@ -80,13 +84,37 @@ func getPR(rt *Runtime) *PullRequest {
 
 }
 
+func getPRCommentContent(rt *Runtime) bool {
+
+	comment, response, err := githubClient.PullRequests.GetComment(
+		context.Background(),
+		rt.Owner,
+		rt.Repo,
+		rt.CommentId,
+	)
+
+	if response.StatusCode != 200 && response.StatusCode != 201 && err != nil {
+
+		log.Fatal("failed to get comment, error: ", err)
+		return false
+	}
+
+	fmt.Printf("comment content: %v\n", comment.GetBody())
+	if comment.GetBody() == Retest {
+
+		return true
+	}
+
+	return false
+}
+
 func addReaction(rt *Runtime, content string) bool {
 
 	_, response, err := githubClient.Reactions.CreateIssueCommentReaction(
 		context.Background(),
 		rt.Owner,
 		rt.Repo,
-		int64(rt.Comment),
+		rt.CommentId,
 		content,
 	)
 
@@ -172,6 +200,13 @@ func rerunJobs(rt *Runtime, failedJobs []*GHRetest) (result *GHRetestResult) {
 func retest() {
 
 	rt := InitRetestCommands()
+
+	if !getPRCommentContent(rt) {
+
+		log.Println("no retest command found")
+		return
+	}
+
 	pr := getPR(rt)
 	failedJosList := getFailedJos(rt, pr)
 
